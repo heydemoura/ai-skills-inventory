@@ -1,79 +1,88 @@
 ---
 name: github
-description: Interact with GitHub repositories — create repos, manage issues, PRs, branches, releases, and more via the GitHub API.
-metadata: {"openclaw":{"emoji":"🐙","requires":{"bins":["curl"]}}}
+description: Interact with GitHub repositories — create repos, manage issues, PRs, branches, releases, and more using the gh CLI.
+metadata: {"openclaw":{"emoji":"🐙","requires":{"bins":["gh"]}}}
 ---
 
 # GitHub Skill
 
-Interact with GitHub using the REST API. Use the helper script at `{baseDir}/scripts/github.sh` for common operations.
+Interact with GitHub using the `gh` CLI. Authenticate with `gh auth login` before use.
 
-## Setup
+## Quick Reference
 
-A GitHub personal access token (PAT) is required. The script reads it from the `GITHUB_TOKEN` environment variable.
-
-To set it, add to your shell profile or agent config:
-```bash
-export GITHUB_TOKEN="ghp_..."
-```
-
-## Usage
-
-All commands use the helper script:
-```bash
-bash {baseDir}/scripts/github.sh <command> [args...]
-```
-
-## Commands
-
-### Repository
-- `repos list [user]` — List repos for a user (default: authenticated user)
-- `repos create <name> [--private] [--description "desc"]` — Create a new repo
-- `repos get <owner/repo>` — Get repo details
-- `repos delete <owner/repo>` — Delete a repo (requires delete_repo scope)
-- `repos clone-url <owner/repo>` — Get clone URL
+### Repositories
+- `gh repo list [owner] --limit 20` — List repos
+- `gh repo create <name> --public|--private [--description "desc"]` — Create repo
+- `gh repo view <owner/repo>` — View repo details
+- `gh repo clone <owner/repo>` — Clone a repo
+- `gh repo delete <owner/repo> --yes` — Delete repo
+- `gh repo fork <owner/repo>` — Fork a repo
+- `gh repo edit <owner/repo> --description "new desc"` — Edit repo metadata
 
 ### Issues
-- `issues list <owner/repo> [--state open|closed|all]` — List issues
-- `issues create <owner/repo> --title "title" [--body "body"] [--labels "l1,l2"]` — Create issue
-- `issues get <owner/repo> <number>` — Get issue details
-- `issues close <owner/repo> <number>` — Close an issue
-- `issues comment <owner/repo> <number> --body "comment"` — Add comment
+- `gh issue list -R <owner/repo> [--state open|closed|all]` — List issues
+- `gh issue create -R <owner/repo> --title "title" [--body "body"] [--label "l1,l2"]` — Create issue
+- `gh issue view <number> -R <owner/repo>` — View issue
+- `gh issue close <number> -R <owner/repo>` — Close issue
+- `gh issue reopen <number> -R <owner/repo>` — Reopen issue
+- `gh issue comment <number> -R <owner/repo> --body "comment"` — Add comment
+- `gh issue edit <number> -R <owner/repo> --title "new title"` — Edit issue
 
 ### Pull Requests
-- `prs list <owner/repo> [--state open|closed|all]` — List PRs
-- `prs create <owner/repo> --title "title" --head <branch> [--base main] [--body "desc"]` — Create PR
-- `prs get <owner/repo> <number>` — Get PR details
-- `prs merge <owner/repo> <number> [--method merge|squash|rebase]` — Merge PR
+- `gh pr list -R <owner/repo> [--state open|closed|merged|all]` — List PRs
+- `gh pr create -R <owner/repo> --title "title" --head <branch> [--base main] [--body "desc"]` — Create PR
+- `gh pr view <number> -R <owner/repo>` — View PR details
+- `gh pr merge <number> -R <owner/repo> [--merge|--squash|--rebase]` — Merge PR
+- `gh pr checkout <number> -R <owner/repo>` — Checkout PR locally
+- `gh pr diff <number> -R <owner/repo>` — View PR diff
+- `gh pr review <number> -R <owner/repo> --approve|--comment|--request-changes` — Review PR
 
 ### Branches
-- `branches list <owner/repo>` — List branches
-- `branches create <owner/repo> <branch-name> [--from main]` — Create branch
-- `branches delete <owner/repo> <branch-name>` — Delete branch
+- `gh api repos/<owner/repo>/branches --jq '.[].name'` — List branches
+- `gh api repos/<owner/repo>/git/refs -f ref=refs/heads/<name> -f sha=<sha>` — Create branch
 
 ### Releases
-- `releases list <owner/repo>` — List releases
-- `releases create <owner/repo> --tag <tag> [--name "name"] [--body "notes"] [--draft] [--prerelease]` — Create release
-- `releases latest <owner/repo>` — Get latest release
+- `gh release list -R <owner/repo>` — List releases
+- `gh release create <tag> -R <owner/repo> [--title "name"] [--notes "notes"] [--draft] [--prerelease]` — Create release
+- `gh release view <tag> -R <owner/repo>` — View release
+- `gh release download <tag> -R <owner/repo>` — Download release assets
+- `gh release delete <tag> -R <owner/repo> --yes` — Delete release
 
 ### Search
-- `search repos <query>` — Search repositories
-- `search code <query> [--repo owner/repo]` — Search code
-- `search issues <query>` — Search issues/PRs
+- `gh search repos <query> --limit 10` — Search repos
+- `gh search code <query> [--repo owner/repo]` — Search code
+- `gh search issues <query>` — Search issues/PRs
+- `gh search prs <query>` — Search PRs specifically
 
-### User
-- `user whoami` — Show authenticated user info
-- `user get <username>` — Get user profile
+### User & Auth
+- `gh auth status` — Check auth status
+- `gh api /user --jq '.login'` — Show authenticated user
+- `gh api /users/<username>` — Get user profile
 
-### Files
-- `files get <owner/repo> <path> [--ref branch]` — Get file contents
-- `files create <owner/repo> <path> --content "content" --message "commit msg" [--branch main]` — Create/update file
+### Files & Content
+- `gh api repos/<owner/repo>/contents/<path> --jq '.content' | base64 -d` — Get file contents
+- `gh browse -R <owner/repo>` — Open repo in browser
 
 ### Gists
-- `gists list` — List your gists
-- `gists create --description "desc" --filename "file.txt" --content "content" [--public]` — Create gist
+- `gh gist list` — List gists
+- `gh gist create <file> [--desc "description"] [--public]` — Create gist from file
+- `gh gist view <id>` — View gist
+
+### Workflows (CI/CD)
+- `gh run list -R <owner/repo>` — List workflow runs
+- `gh run view <id> -R <owner/repo>` — View run details
+- `gh run watch <id> -R <owner/repo>` — Watch run in progress
+- `gh workflow list -R <owner/repo>` — List workflows
+- `gh workflow run <workflow> -R <owner/repo>` — Trigger workflow
+
+### API (for anything not covered)
+- `gh api <endpoint>` — GET request
+- `gh api <endpoint> -X POST -f key=value` — POST request
+- `gh api <endpoint> --jq '<filter>'` — Filter JSON output
 
 ## Tips
-- For complex operations, combine commands or use `curl` directly with the GitHub API
+- Use `-R owner/repo` to target a repo without being in its directory
+- Use `--json field1,field2 --jq '.[]'` for structured output
+- Pipe to `--jq` for filtering JSON responses
 - Rate limits: 5,000 requests/hour for authenticated requests
-- Reference: https://docs.github.com/en/rest
+- Docs: https://cli.github.com/manual/
