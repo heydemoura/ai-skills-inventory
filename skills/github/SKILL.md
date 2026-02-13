@@ -1,79 +1,145 @@
 ---
 name: github
-description: Interact with GitHub repositories — create repos, manage issues, PRs, branches, releases, and more via the GitHub API.
-metadata: {"openclaw":{"emoji":"🐙","requires":{"bins":["curl"]}}}
+description: Interact with GitHub repositories — create repos, manage issues, PRs, branches, releases, and more. Uses gh CLI for authenticated operations and REST API for public reads.
+metadata: {"openclaw":{"emoji":"🐙","requires":{"anyBins":["gh","curl"]}}}
 ---
 
 # GitHub Skill
 
-Interact with GitHub using the REST API. Use the helper script at `{baseDir}/scripts/github.sh` for common operations.
+Interact with GitHub using two approaches:
+- **`gh` CLI** — for authenticated operations (create, edit, delete, push, PRs, etc.)
+- **REST API via `curl`** — for reading public repos/data without auth (faster, no login needed)
 
-## Setup
+## Authentication
 
-A GitHub personal access token (PAT) is required. The script reads it from the `GITHUB_TOKEN` environment variable.
-
-To set it, add to your shell profile or agent config:
+For `gh` CLI operations, authenticate first:
 ```bash
-export GITHUB_TOKEN="ghp_..."
+gh auth login
 ```
 
-## Usage
+## Public Data (REST API — no auth required)
 
-All commands use the helper script:
+Use `curl` to read public repositories, users, and content without authentication.
+
+### View public repo info
 ```bash
-bash {baseDir}/scripts/github.sh <command> [args...]
+curl -s https://api.github.com/repos/<owner/repo> | python3 -m json.tool
 ```
 
-## Commands
+### List public repos for a user
+```bash
+curl -s "https://api.github.com/users/<user>/repos?per_page=30&sort=updated"
+```
 
-### Repository
-- `repos list [user]` — List repos for a user (default: authenticated user)
-- `repos create <name> [--private] [--description "desc"]` — Create a new repo
-- `repos get <owner/repo>` — Get repo details
-- `repos delete <owner/repo>` — Delete a repo (requires delete_repo scope)
-- `repos clone-url <owner/repo>` — Get clone URL
+### Get public file contents
+```bash
+curl -s https://api.github.com/repos/<owner/repo>/contents/<path> | python3 -c "import sys,json,base64; print(base64.b64decode(json.load(sys.stdin)['content']).decode())"
+```
+
+### List public releases
+```bash
+curl -s https://api.github.com/repos/<owner/repo>/releases
+```
+
+### List public issues
+```bash
+curl -s "https://api.github.com/repos/<owner/repo>/issues?state=open&per_page=30"
+```
+
+### List branches (public repo)
+```bash
+curl -s https://api.github.com/repos/<owner/repo>/branches
+```
+
+### Get public user profile
+```bash
+curl -s https://api.github.com/users/<username>
+```
+
+### Search (public)
+```bash
+# Search repos
+curl -s "https://api.github.com/search/repositories?q=<query>&per_page=10"
+
+# Search code
+curl -s "https://api.github.com/search/code?q=<query>+repo:<owner/repo>"
+
+# Search issues
+curl -s "https://api.github.com/search/issues?q=<query>"
+```
+
+### Rate limits
+- Unauthenticated: 60 requests/hour (by IP)
+- Add `--jq` or pipe through `python3 -m json.tool` for readability
+
+## Authenticated Operations (gh CLI)
+
+Use `gh` for anything that requires write access or private data.
+
+### Repositories
+- `gh repo list [owner] --limit 20` — List repos
+- `gh repo create <name> --public|--private [--description "desc"]` — Create repo
+- `gh repo view <owner/repo>` — View repo details
+- `gh repo clone <owner/repo>` — Clone a repo
+- `gh repo delete <owner/repo> --yes` — Delete repo
+- `gh repo fork <owner/repo>` — Fork a repo
+- `gh repo edit <owner/repo> --description "new desc"` — Edit repo metadata
 
 ### Issues
-- `issues list <owner/repo> [--state open|closed|all]` — List issues
-- `issues create <owner/repo> --title "title" [--body "body"] [--labels "l1,l2"]` — Create issue
-- `issues get <owner/repo> <number>` — Get issue details
-- `issues close <owner/repo> <number>` — Close an issue
-- `issues comment <owner/repo> <number> --body "comment"` — Add comment
+- `gh issue list -R <owner/repo> [--state open|closed|all]` — List issues
+- `gh issue create -R <owner/repo> --title "title" [--body "body"] [--label "l1,l2"]` — Create issue
+- `gh issue view <number> -R <owner/repo>` — View issue
+- `gh issue close <number> -R <owner/repo>` — Close issue
+- `gh issue reopen <number> -R <owner/repo>` — Reopen issue
+- `gh issue comment <number> -R <owner/repo> --body "comment"` — Add comment
+- `gh issue edit <number> -R <owner/repo> --title "new title"` — Edit issue
 
 ### Pull Requests
-- `prs list <owner/repo> [--state open|closed|all]` — List PRs
-- `prs create <owner/repo> --title "title" --head <branch> [--base main] [--body "desc"]` — Create PR
-- `prs get <owner/repo> <number>` — Get PR details
-- `prs merge <owner/repo> <number> [--method merge|squash|rebase]` — Merge PR
-
-### Branches
-- `branches list <owner/repo>` — List branches
-- `branches create <owner/repo> <branch-name> [--from main]` — Create branch
-- `branches delete <owner/repo> <branch-name>` — Delete branch
+- `gh pr list -R <owner/repo> [--state open|closed|merged|all]` — List PRs
+- `gh pr create -R <owner/repo> --title "title" --head <branch> [--base main] [--body "desc"]` — Create PR
+- `gh pr view <number> -R <owner/repo>` — View PR details
+- `gh pr merge <number> -R <owner/repo> [--merge|--squash|--rebase]` — Merge PR
+- `gh pr checkout <number> -R <owner/repo>` — Checkout PR locally
+- `gh pr diff <number> -R <owner/repo>` — View PR diff
+- `gh pr review <number> -R <owner/repo> --approve|--comment|--request-changes` — Review PR
 
 ### Releases
-- `releases list <owner/repo>` — List releases
-- `releases create <owner/repo> --tag <tag> [--name "name"] [--body "notes"] [--draft] [--prerelease]` — Create release
-- `releases latest <owner/repo>` — Get latest release
+- `gh release list -R <owner/repo>` — List releases
+- `gh release create <tag> -R <owner/repo> [--title "name"] [--notes "notes"] [--draft] [--prerelease]` — Create release
+- `gh release view <tag> -R <owner/repo>` — View release
+- `gh release download <tag> -R <owner/repo>` — Download release assets
+- `gh release delete <tag> -R <owner/repo> --yes` — Delete release
 
-### Search
-- `search repos <query>` — Search repositories
-- `search code <query> [--repo owner/repo]` — Search code
-- `search issues <query>` — Search issues/PRs
+### Search (authenticated, higher rate limit)
+- `gh search repos <query> --limit 10` — Search repos
+- `gh search code <query> [--repo owner/repo]` — Search code
+- `gh search issues <query>` — Search issues/PRs
+- `gh search prs <query>` — Search PRs specifically
 
-### User
-- `user whoami` — Show authenticated user info
-- `user get <username>` — Get user profile
-
-### Files
-- `files get <owner/repo> <path> [--ref branch]` — Get file contents
-- `files create <owner/repo> <path> --content "content" --message "commit msg" [--branch main]` — Create/update file
+### User & Auth
+- `gh auth status` — Check auth status
+- `gh api /user --jq '.login'` — Show authenticated user
 
 ### Gists
-- `gists list` — List your gists
-- `gists create --description "desc" --filename "file.txt" --content "content" [--public]` — Create gist
+- `gh gist list` — List gists
+- `gh gist create <file> [--desc "description"] [--public]` — Create gist from file
+- `gh gist view <id>` — View gist
+
+### Workflows (CI/CD)
+- `gh run list -R <owner/repo>` — List workflow runs
+- `gh run view <id> -R <owner/repo>` — View run details
+- `gh run watch <id> -R <owner/repo>` — Watch run in progress
+- `gh workflow list -R <owner/repo>` — List workflows
+- `gh workflow run <workflow> -R <owner/repo>` — Trigger workflow
+
+### API (for anything not covered)
+- `gh api <endpoint>` — GET request
+- `gh api <endpoint> -X POST -f key=value` — POST request
+- `gh api <endpoint> --jq '<filter>'` — Filter JSON output
 
 ## Tips
-- For complex operations, combine commands or use `curl` directly with the GitHub API
-- Rate limits: 5,000 requests/hour for authenticated requests
-- Reference: https://docs.github.com/en/rest
+- **Public reads** → use `curl` (no auth, fast, 60 req/hr)
+- **Writes / private data** → use `gh` (authenticated, 5,000 req/hr)
+- Use `-R owner/repo` to target a repo without being in its directory
+- Use `--json field1,field2 --jq '.[]'` for structured output
+- Docs: https://cli.github.com/manual/ | https://docs.github.com/en/rest
