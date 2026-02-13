@@ -1,14 +1,80 @@
 ---
 name: github
-description: Interact with GitHub repositories — create repos, manage issues, PRs, branches, releases, and more using the gh CLI.
-metadata: {"openclaw":{"emoji":"🐙","requires":{"bins":["gh"]}}}
+description: Interact with GitHub repositories — create repos, manage issues, PRs, branches, releases, and more. Uses gh CLI for authenticated operations and REST API for public reads.
+metadata: {"openclaw":{"emoji":"🐙","requires":{"anyBins":["gh","curl"]}}}
 ---
 
 # GitHub Skill
 
-Interact with GitHub using the `gh` CLI. Authenticate with `gh auth login` before use.
+Interact with GitHub using two approaches:
+- **`gh` CLI** — for authenticated operations (create, edit, delete, push, PRs, etc.)
+- **REST API via `curl`** — for reading public repos/data without auth (faster, no login needed)
 
-## Quick Reference
+## Authentication
+
+For `gh` CLI operations, authenticate first:
+```bash
+gh auth login
+```
+
+## Public Data (REST API — no auth required)
+
+Use `curl` to read public repositories, users, and content without authentication.
+
+### View public repo info
+```bash
+curl -s https://api.github.com/repos/<owner/repo> | python3 -m json.tool
+```
+
+### List public repos for a user
+```bash
+curl -s "https://api.github.com/users/<user>/repos?per_page=30&sort=updated"
+```
+
+### Get public file contents
+```bash
+curl -s https://api.github.com/repos/<owner/repo>/contents/<path> | python3 -c "import sys,json,base64; print(base64.b64decode(json.load(sys.stdin)['content']).decode())"
+```
+
+### List public releases
+```bash
+curl -s https://api.github.com/repos/<owner/repo>/releases
+```
+
+### List public issues
+```bash
+curl -s "https://api.github.com/repos/<owner/repo>/issues?state=open&per_page=30"
+```
+
+### List branches (public repo)
+```bash
+curl -s https://api.github.com/repos/<owner/repo>/branches
+```
+
+### Get public user profile
+```bash
+curl -s https://api.github.com/users/<username>
+```
+
+### Search (public)
+```bash
+# Search repos
+curl -s "https://api.github.com/search/repositories?q=<query>&per_page=10"
+
+# Search code
+curl -s "https://api.github.com/search/code?q=<query>+repo:<owner/repo>"
+
+# Search issues
+curl -s "https://api.github.com/search/issues?q=<query>"
+```
+
+### Rate limits
+- Unauthenticated: 60 requests/hour (by IP)
+- Add `--jq` or pipe through `python3 -m json.tool` for readability
+
+## Authenticated Operations (gh CLI)
+
+Use `gh` for anything that requires write access or private data.
 
 ### Repositories
 - `gh repo list [owner] --limit 20` — List repos
@@ -37,10 +103,6 @@ Interact with GitHub using the `gh` CLI. Authenticate with `gh auth login` befor
 - `gh pr diff <number> -R <owner/repo>` — View PR diff
 - `gh pr review <number> -R <owner/repo> --approve|--comment|--request-changes` — Review PR
 
-### Branches
-- `gh api repos/<owner/repo>/branches --jq '.[].name'` — List branches
-- `gh api repos/<owner/repo>/git/refs -f ref=refs/heads/<name> -f sha=<sha>` — Create branch
-
 ### Releases
 - `gh release list -R <owner/repo>` — List releases
 - `gh release create <tag> -R <owner/repo> [--title "name"] [--notes "notes"] [--draft] [--prerelease]` — Create release
@@ -48,7 +110,7 @@ Interact with GitHub using the `gh` CLI. Authenticate with `gh auth login` befor
 - `gh release download <tag> -R <owner/repo>` — Download release assets
 - `gh release delete <tag> -R <owner/repo> --yes` — Delete release
 
-### Search
+### Search (authenticated, higher rate limit)
 - `gh search repos <query> --limit 10` — Search repos
 - `gh search code <query> [--repo owner/repo]` — Search code
 - `gh search issues <query>` — Search issues/PRs
@@ -57,11 +119,6 @@ Interact with GitHub using the `gh` CLI. Authenticate with `gh auth login` befor
 ### User & Auth
 - `gh auth status` — Check auth status
 - `gh api /user --jq '.login'` — Show authenticated user
-- `gh api /users/<username>` — Get user profile
-
-### Files & Content
-- `gh api repos/<owner/repo>/contents/<path> --jq '.content' | base64 -d` — Get file contents
-- `gh browse -R <owner/repo>` — Open repo in browser
 
 ### Gists
 - `gh gist list` — List gists
@@ -81,8 +138,8 @@ Interact with GitHub using the `gh` CLI. Authenticate with `gh auth login` befor
 - `gh api <endpoint> --jq '<filter>'` — Filter JSON output
 
 ## Tips
+- **Public reads** → use `curl` (no auth, fast, 60 req/hr)
+- **Writes / private data** → use `gh` (authenticated, 5,000 req/hr)
 - Use `-R owner/repo` to target a repo without being in its directory
 - Use `--json field1,field2 --jq '.[]'` for structured output
-- Pipe to `--jq` for filtering JSON responses
-- Rate limits: 5,000 requests/hour for authenticated requests
-- Docs: https://cli.github.com/manual/
+- Docs: https://cli.github.com/manual/ | https://docs.github.com/en/rest
