@@ -1,5 +1,5 @@
 ---
-name: project-manager
+name: project-manager-custom
 description: Manage and provide context for all projects under ~/code. Use when working across multiple projects, integrating projects together, checking project status, adding new projects, or when any task references code/builds/configs from existing projects. Triggers on questions about project structure, dependencies, build status, or cross-project integration (e.g., "rebuild X and update Y", "what projects do I have", "add a new module to X").
 metadata: {"openclaw":{"emoji":"📂","requires":{"anyBins":["bash","git"]}}}
 ---

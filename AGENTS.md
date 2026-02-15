@@ -10,9 +10,10 @@ A curated collection of agent-agnostic AI skills following the [AgentSkills](htt
 ai-skill-inventory/
 ├── skills/           # Skill folders
 │   ├── example/      # Template skill
-│   ├── github/       # GitHub CLI skill
-│   ├── opencode/     # OpenCode config skill
-│   └── <name>/       # Each skill is a directory
+│   ├── github-custom/       # GitHub CLI skill
+│   ├── opencode/            # OpenCode config skill
+│   ├── project-manager-custom/ # Project orchestration skill
+│   └── <name>/              # Each skill is a directory
 │       ├── SKILL.md  # Required: skill definition with YAML frontmatter
 │       ├── scripts/  # Optional: executable scripts
 │       └── references/ # Optional: reference docs

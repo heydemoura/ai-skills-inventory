@@ -65,8 +65,9 @@ This follows the [AgentSkills](https://agentskills.io) spec.
 | Skill | Description |
 |-------|-------------|
 | `example` | Example skill template |
-| `github` | GitHub CLI workflows |
+| `github-custom` | GitHub CLI workflows |
 | `opencode` | OpenCode editor integration |
+| `project-manager-custom` | Cross-project project management context |
 
 ## Agents
 
