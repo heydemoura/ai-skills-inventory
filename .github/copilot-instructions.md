@@ -25,10 +25,6 @@ Each skill must have a `SKILL.md` with YAML frontmatter:
 ---
 name: <skill-name>
 description: <one-line description>
-metadata:
-  version: "1.0"
-  author: <author>
-  tags: [<relevant>, <tags>]
 ---
 ```
 
