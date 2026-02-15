@@ -21,6 +21,7 @@ jobs:
       )
     runs-on: ubuntu-latest
     permissions:
+      id-token: write
       contents: write
       pull-requests: write
       issues: write
@@ -37,11 +38,8 @@ jobs:
 
       - name: Run OpenCode
         uses: anomalyco/opencode/github@latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: github-copilot/claude-opus-4-5
-          use_github_token: true
           prompt: |
             You are working on the ai-skills-inventory repository — a curated collection of
             agent-agnostic AI skills and agents following the AgentSkills spec.
