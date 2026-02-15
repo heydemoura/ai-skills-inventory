@@ -11,7 +11,7 @@ concurrency:
 jobs:
   opencode:
     if: >-
-      github.event.label.name == 'Ready for agent' &&
+      github.event.label.name == 'ready for agent' &&
       (
         github.event.sender.login == github.repository_owner ||
         contains(fromJSON('["heydemoura", "m3dabot"]'), github.event.sender.login)
