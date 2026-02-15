@@ -4,9 +4,18 @@ on:
   issues:
     types: [labeled]
 
+concurrency:
+  group: opencode-agent
+  cancel-in-progress: false
+
 jobs:
   opencode:
-    if: github.event.label.name == 'Ready for agent'
+    if: >-
+      github.event.label.name == 'Ready for agent' &&
+      (
+        github.event.sender.login == github.repository_owner ||
+        contains(fromJSON('["heydemoura", "m3dabot"]'), github.event.sender.login)
+      )
     runs-on: ubuntu-latest
     permissions:
       id-token: write
