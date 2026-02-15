@@ -39,7 +39,7 @@ jobs:
       - name: Run OpenCode
         uses: anomalyco/opencode/github@latest
         with:
-          model: github-copilot/claude-opus-4.6
+          model: github-copilot/claude-opus-4-6
           prompt: |
             You are working on the ai-skills-inventory repository — a curated collection of
             agent-agnostic AI skills and agents following the AgentSkills spec.
