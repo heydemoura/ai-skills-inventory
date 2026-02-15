@@ -1,8 +1,8 @@
 name: OpenCode Agent
 
 on:
-  issues:
-    types: [labeled]
+  issue_comment:
+    types: [created]
 
 concurrency:
   group: opencode-agent
@@ -11,14 +11,16 @@ concurrency:
 jobs:
   opencode:
     if: >-
-      github.event.label.name == 'Ready for agent' &&
+      (
+        contains(github.event.comment.body, '/opencode') ||
+        contains(github.event.comment.body, '/oc')
+      ) &&
       (
         github.event.sender.login == github.repository_owner ||
         contains(fromJSON('["heydemoura", "m3dabot"]'), github.event.sender.login)
       )
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: write
       pull-requests: write
       issues: write
@@ -35,16 +37,18 @@ jobs:
 
       - name: Run OpenCode
         uses: anomalyco/opencode/github@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: github-copilot/claude-opus-4-5
+          use_github_token: true
           prompt: |
             You are working on the ai-skills-inventory repository — a curated collection of
-            agent-agnostic AI skills following the AgentSkills spec.
+            agent-agnostic AI skills and agents following the AgentSkills spec.
 
-            Read the issue below carefully. Implement what is requested:
-            - Create or modify skill folders under `skills/`
-            - Each skill must have a `SKILL.md` with proper YAML frontmatter (name, description, metadata)
-            - Include `scripts/` and/or `references/` subdirectories as needed
-            - Follow the patterns of existing skills in this repo
+            Read the issue thread carefully. Implement what is requested:
+            - For skills: create or modify folders under `skills/` with `SKILL.md` + optional `scripts/` and `references/`
+            - For agents: create or modify folders under `agents/` with `AGENT.md`
+            - Follow the patterns and format of existing skills/agents in this repo
 
             When done, create a PR with all changes. Reference the issue number in the PR description.
