@@ -3,8 +3,8 @@ name: security-review
 description: Senior security specialist — reviews for injection flaws, auth issues, data exposure, dependency risks, and OWASP top 10.
 mode: subagent
 tools:
-  write: false
-  edit: false
+  write: true
+  edit: true
 ---
 
 # Security Review Agent

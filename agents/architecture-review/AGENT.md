@@ -3,8 +3,8 @@ name: architecture-review
 description: Senior systems architect — evaluates design patterns, module boundaries, dependencies, scalability, and technical debt.
 mode: subagent
 tools:
-  write: false
-  edit: false
+  write: true
+  edit: true
 ---
 
 # Architecture Review Agent

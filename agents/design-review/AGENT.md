@@ -3,8 +3,8 @@ name: design-review
 description: Senior UI/UX designer — reviews accessibility, responsive design, user flows, visual consistency, and design system adherence.
 mode: subagent
 tools:
-  write: false
-  edit: false
+  write: true
+  edit: true
 ---
 
 # Design Review Agent

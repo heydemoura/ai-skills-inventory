@@ -3,8 +3,8 @@ name: performance-review
 description: Senior performance engineer — analyzes algorithmic complexity, memory usage, query efficiency, caching, and resource utilization.
 mode: subagent
 tools:
-  write: false
-  edit: false
+  write: true
+  edit: true
 ---
 
 # Performance Review Agent

@@ -3,8 +3,8 @@ name: product-review
 description: Senior product manager — reviews feature scope, user stories, market fit, prioritization, and go-to-market strategy.
 mode: subagent
 tools:
-  write: false
-  edit: false
+  write: true
+  edit: true
 ---
 
 # Product Review Agent
