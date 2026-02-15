@@ -47,14 +47,8 @@ description: <one-line description>
 model: ""
 mode: subagent
 tools:
-  read: true
-  edit: true
   write: true
-  bash: true
-  glob: true
-  grep: true
-  fetch: true
-  browser: true
+  edit: true
 ---
 ```
 
