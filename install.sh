@@ -213,59 +213,102 @@ if command -v openclaw &>/dev/null || [ -f "$OPENCLAW_CONFIG" ]; then
         warn "Config file not found at $OPENCLAW_CONFIG — skipping config update"
     else
         if command -v node &>/dev/null; then
-            ALREADY_CONFIGURED=$(node -e "
+            PATCH_RESULT=$(node -e "
                 const fs = require('fs');
+                const path = '$OPENCLAW_CONFIG';
+                const skillsDir = '~/.agents/skills';
+                const agentsSrc = '$AGENTS_SRC';
+                const agentsTarget = '$AGENTS_TARGET';
+                const workspace = '$REPO_DIR';
+
+                let cfg;
                 try {
-                    let raw = fs.readFileSync('$OPENCLAW_CONFIG', 'utf8');
-                    const cfg = JSON.parse(raw);
-                    const dirs = cfg?.skills?.load?.extraDirs || [];
-                    console.log(dirs.includes('$SKILLS_TARGET') || dirs.includes('~/.agents/skills') ? 'yes' : 'no');
-                } catch(e) {
-                    console.log('error');
+                  cfg = JSON.parse(fs.readFileSync(path, 'utf8'));
+                } catch (e) {
+                  console.log('ERROR|parse');
+                  process.exit(0);
                 }
-            " 2>/dev/null || echo "error")
 
-            if [ "$ALREADY_CONFIGURED" = "yes" ]; then
-                info "OpenClaw already configured with ~/.agents/skills in extraDirs"
-            elif [ "$ALREADY_CONFIGURED" = "error" ]; then
-                warn "Could not parse OpenClaw config — please add manually:"
-                echo ""
-                echo '  "skills": { "load": { "extraDirs": ["~/.agents/skills"] } }'
-                echo ""
-            else
-                node -e "
-                    const fs = require('fs');
-                    const path = '$OPENCLAW_CONFIG';
-                    let raw = fs.readFileSync(path, 'utf8');
-                    let cfg;
-                    try { cfg = JSON.parse(raw); } catch(e) {
-                        console.log('Cannot auto-patch JSON5 config. Please add manually.');
-                        process.exit(1);
-                    }
-                    if (!cfg.skills) cfg.skills = {};
-                    if (!cfg.skills.load) cfg.skills.load = {};
-                    if (!cfg.skills.load.extraDirs) cfg.skills.load.extraDirs = [];
-                    if (!cfg.skills.load.extraDirs.includes('~/.agents/skills')) {
-                        cfg.skills.load.extraDirs.push('~/.agents/skills');
-                    }
-                    fs.writeFileSync(path, JSON.stringify(cfg, null, 2) + '\n');
-                " 2>/dev/null
+                let skillsDirAdded = 0;
+                if (!cfg.skills) cfg.skills = {};
+                if (!cfg.skills.load) cfg.skills.load = {};
+                if (!Array.isArray(cfg.skills.load.extraDirs)) cfg.skills.load.extraDirs = [];
+                if (!cfg.skills.load.extraDirs.includes(skillsDir) && !cfg.skills.load.extraDirs.includes('$SKILLS_TARGET')) {
+                  cfg.skills.load.extraDirs.push(skillsDir);
+                  skillsDirAdded = 1;
+                }
 
-                if [ $? -eq 0 ]; then
-                    info "Added ~/.agents/skills to OpenClaw skills.load.extraDirs"
-                    warn "Restart OpenClaw to pick up the changes: openclaw gateway restart"
-                else
-                    warn "Could not auto-patch config. Please add manually:"
+                let addedAgents = 0;
+                let existingAgents = 0;
+                const agentNames = [];
+
+                try {
+                  const dirs = fs.readdirSync(agentsSrc, { withFileTypes: true })
+                    .filter(d => d.isDirectory())
+                    .map(d => d.name);
+                  for (const name of dirs) {
+                    const md = agentsSrc + '/' + name + '/AGENT.md';
+                    if (fs.existsSync(md)) agentNames.push(name);
+                  }
+                } catch (_) {}
+
+                if (!cfg.agents) cfg.agents = {};
+                if (!Array.isArray(cfg.agents.list)) cfg.agents.list = [];
+
+                for (const name of agentNames) {
+                  const exists = cfg.agents.list.some(a => a && a.id === name);
+                  if (exists) {
+                    existingAgents += 1;
+                    continue;
+                  }
+                  cfg.agents.list.push({
+                    id: name,
+                    name,
+                    workspace,
+                    agentDir: agentsTarget + '/' + name
+                  });
+                  addedAgents += 1;
+                }
+
+                fs.writeFileSync(path, JSON.stringify(cfg, null, 2) + '\n');
+                console.log('OK|' + skillsDirAdded + '|' + addedAgents + '|' + existingAgents);
+            " 2>/dev/null || echo "ERROR|exec")
+
+            case "$PATCH_RESULT" in
+                ERROR\|parse)
+                    warn "Could not parse OpenClaw config — cannot auto-patch (JSON5 unsupported)"
+                    warn "Please add manually:"
                     echo ""
                     echo '  "skills": { "load": { "extraDirs": ["~/.agents/skills"] } }'
                     echo ""
-                fi
-            fi
+                    ;;
+                ERROR\|exec)
+                    warn "Failed to patch OpenClaw config automatically"
+                    ;;
+                OK\|*)
+                    IFS='|' read -r _ SKILLS_DIR_ADDED ADDED_AGENTS EXISTING_AGENTS <<< "$PATCH_RESULT"
+
+                    if [ "$SKILLS_DIR_ADDED" = "1" ]; then
+                        info "Added ~/.agents/skills to OpenClaw skills.load.extraDirs"
+                    else
+                        info "OpenClaw already configured with ~/.agents/skills in extraDirs"
+                    fi
+
+                    info "OpenClaw agents auto-registered: $ADDED_AGENTS added, $EXISTING_AGENTS already present"
+                    if [ "$ADDED_AGENTS" -gt 0 ] || [ "$SKILLS_DIR_ADDED" = "1" ]; then
+                        warn "Restart OpenClaw to pick up the changes: openclaw gateway restart"
+                    fi
+                    ;;
+                *)
+                    warn "Unexpected patch result: $PATCH_RESULT"
+                    ;;
+            esac
         else
             warn "Node.js not found — cannot auto-patch OpenClaw config"
             warn "Please add manually to $OPENCLAW_CONFIG:"
             echo ""
             echo '  "skills": { "load": { "extraDirs": ["~/.agents/skills"] } }'
+            echo '  "agents": { "list": [ { "id": "my-agent", "agentDir": "~/.agents/agents/my-agent" } ] }'
             echo ""
         fi
     fi
