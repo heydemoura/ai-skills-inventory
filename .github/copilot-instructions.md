@@ -49,7 +49,7 @@ Each agent must have an `AGENT.md` with YAML frontmatter:
 name: <agent-name>
 description: <one-line description>
 model: ""
-mode: plan
+mode: subagent
 tools:
   read: true
   edit: true
