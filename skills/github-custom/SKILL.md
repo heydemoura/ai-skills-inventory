@@ -1,5 +1,5 @@
 ---
-name: github
+name: github-custom
 description: Interact with GitHub repositories — create repos, manage issues, PRs, branches, releases, and more. Uses gh CLI for authenticated operations and REST API for public reads.
 metadata: {"openclaw":{"emoji":"🐙","requires":{"anyBins":["gh","curl"]}}}
 ---
