@@ -67,6 +67,7 @@ This follows the [AgentSkills](https://agentskills.io) spec.
 | `example` | Example skill template |
 | `github` | GitHub CLI workflows |
 | `opencode` | OpenCode editor integration |
+| `prosperostore-submit` | List, update or reserve a native PS5 app in the ProsperoStore catalogs (official + mirror) |
 
 ## Agents
 
